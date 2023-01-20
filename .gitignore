@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+3_AI_for_Wildlife_Images/dataset.py
+3_AI_for_Wildlife_Images/training_utils.py
+3_AI_for_Wildlife_Images/content/
+3_AI_for_Wildlife_Images/old/
+3_AI_for_Wildlife_Images/data/
