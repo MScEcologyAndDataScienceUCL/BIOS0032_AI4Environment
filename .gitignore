@@ -127,6 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.pdm.toml
+.virtual_documents/
 
 
 3_AI_for_Wildlife_Images/dataset.py
