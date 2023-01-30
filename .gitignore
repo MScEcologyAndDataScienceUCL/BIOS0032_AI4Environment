@@ -131,6 +131,7 @@ dmypy.json
 .virtual_documents/
 
 
+4_AI_for_Bioacoustics/data/
 3_AI_for_Wildlife_Images/dataset.py
 3_AI_for_Wildlife_Images/training_utils.py
 3_AI_for_Wildlife_Images/utils.py
