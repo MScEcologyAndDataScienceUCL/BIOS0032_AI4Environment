@@ -8,13 +8,13 @@ authors = [
     {name = "Kate Jones", email = "kate.e.jones@ucl.ac.uk"},
 ]
 dependencies = [
-    "librosa,
-    "matplotlib,
-    "plotly,
-    "ipython,
-    "pydub,
-    "ipywebrtc,
-    "xarray,
+    "librosa",
+    "matplotlib",
+    "plotly",
+    "ipython",
+    "pydub",
+    "ipywebrtc",
+    "xarray",
 ]
 requires-python = ">=3.8"
 license = {text = "MIT"}
