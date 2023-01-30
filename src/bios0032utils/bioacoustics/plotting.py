@@ -6,13 +6,14 @@ import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import xarray as xa
 from IPython.display import Audio
 from librosa import display
 from matplotlib.patches import Rectangle
 
 from bios0032utils.bioacoustics.evaluate_detection import (
     bboxes_from_annotations,
-    bboxes_from_tadarida_detections,
     match_bboxes,
 )
 
@@ -213,10 +214,11 @@ def plot_spectrogram_and_detection(
         file: Path to the audio file.
         detections: Dataframe with detections.
             The dataframe must have the following columns:
-                StTime: Start time of the detection in milliseconds.
-                Dur: Duration of the detection in milliseconds.
-                Fmin: Minimum frequency of the detection in kHz.
-                BW: Bandwidth of the detection in kHz.
+                recording_id: ID of the recording.
+                start_time: Start time of the detection.
+                end_time: End time of the detection.
+                low_freq: Lowest frequency of the detection.
+                high_freq: Highest frequency of the detection.
 
     """
     wav, samplerate = librosa.load(path, sr=None)  # type: ignore
@@ -248,77 +250,7 @@ def plot_spectrogram_and_detection(
     )
 
     for _, row in detections.iterrows():
-        if str(row["wav"]) != path:
-            continue
-
-        rect = Rectangle(
-            (row["StTime"] / 1000, row["Fmin"] * 1000),
-            row["Dur"] / 1000,
-            row["BW"] * 1000,
-            linewidth=linewidth,
-            edgecolor="r",
-            facecolor="none",
-        )
-
-        ax.add_patch(rect)  # type: ignore
-
-    return ax
-
-
-def plot_spectrogram_and_ground_truth(
-    path: str,
-    ground_truth: pd.DataFrame,
-    ax=None,
-    figsize=(14, 4),
-    cmap="magma",
-    n_fft=512,
-    hop_length=128,
-    linewidth=2,
-):
-    """Plot the spectrogram of an audio file and ground truth.
-
-    Draw a red rectangle for each ground truth annotation.
-
-    Args:
-        file: Path to the audio file.
-        ground_truth: Dataframe with ground truth annotations.
-            The dataframe must have the following columns:
-                recording_id: Name of the recording.
-                start_time: Start time of the annotation in seconds.
-                end_time: End time of the annotation in seconds.
-                low_freq: Minimum frequency of the annotation in Hz.
-                high_freq: Maximum frequency of the annotation in Hz.
-    """
-    wav, samplerate = librosa.load(path, sr=None)  # type: ignore
-
-    spectrogram = librosa.amplitude_to_db(
-        np.abs(
-            librosa.stft(
-                wav,
-                hop_length=hop_length,
-                n_fft=n_fft,
-                window="hann",
-            )
-        ),
-        ref=np.max,  # type: ignore
-    )
-
-    if ax is None:
-        _, ax = plt.subplots(figsize=figsize)
-
-    display.specshow(
-        spectrogram,
-        sr=samplerate,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        x_axis="time",
-        y_axis="linear",
-        cmap=cmap,
-        ax=ax,
-    )
-
-    for _, row in ground_truth.iterrows():
-        if row["recording_id"] != os.path.basename(path):
+        if str(row["recording_id"]) != os.path.basename(path):
             continue
 
         rect = Rectangle(
@@ -330,7 +262,7 @@ def plot_spectrogram_and_ground_truth(
             facecolor="none",
         )
 
-        ax.add_patch(rect)
+        ax.add_patch(rect)  # type: ignore
 
     return ax
 
@@ -344,7 +276,8 @@ def plot_spectrogram_with_predictions_and_annotations(
     cmap="magma",
     n_fft=512,
     hop_length=128,
-    threshold=0.5,
+    iou_threshold=0.5,
+    linewidth=1,
 ):
     """Plot the spectrogram of an audio file and predictions and annotations.
 
@@ -357,11 +290,11 @@ def plot_spectrogram_with_predictions_and_annotations(
         file: Path to the audio file.
         predictions: Dataframe with predictions.
             The dataframe must have the following columns:
-                Filename: Name of the recording.
-                StTime: Start time of the prediction in milliseconds.
-                Dur: Duration of the prediction in milliseconds.
-                Fmin: Minimum frequency of the prediction in kHz.
-                BW: Bandwidth of the prediction in kHz.
+                recording_id: Name of the recording.
+                start_time: Start time of the annotation in seconds.
+                end_time: End time of the annotation in seconds.
+                low_freq: Minimum frequency of the annotation in Hz.
+                high_freq: Maximum frequency of the annotation in Hz.
         annotations: Dataframe with ground truth annotations.
             The dataframe must have the following columns:
                 recording_id: Name of the recording.
@@ -405,11 +338,11 @@ def plot_spectrogram_with_predictions_and_annotations(
     )
 
     annotations = annotations[annotations["recording_id"] == os.path.basename(path)]
-    predictions = predictions[predictions["Filename"] == os.path.basename(path)]
+    predictions = predictions[predictions["recording_id"] == os.path.basename(path)]
 
     true_boxes = bboxes_from_annotations(annotations)
-    pred_boxes = bboxes_from_tadarida_detections(predictions)
-    matches = match_bboxes(true_boxes, pred_boxes, threshold=threshold)
+    pred_boxes = bboxes_from_annotations(predictions)
+    matches = match_bboxes(true_boxes, pred_boxes, iou_threshold=iou_threshold)
 
     matched_annotations = set(matches["annotation"])
     matched_predictions = set(matches["prediction"])
@@ -422,7 +355,7 @@ def plot_spectrogram_with_predictions_and_annotations(
             (row["start_time"], row["low_freq"]),
             row["end_time"] - row["start_time"],
             row["high_freq"] - row["low_freq"],
-            linewidth=1,
+            linewidth=linewidth,
             edgecolor="g" if index in matched_annotations else "w",
             facecolor="none",
             linestyle="--",
@@ -430,20 +363,56 @@ def plot_spectrogram_with_predictions_and_annotations(
 
         ax.add_patch(rect)  # type: ignore
 
-
     for index, (_, row) in enumerate(predictions.iterrows()):
-        if row["Filename"] != os.path.basename(path):
+        if row["recording_id"] != os.path.basename(path):
             continue
 
         rect = Rectangle(
-            (row["StTime"] / 1000, row["Fmin"] * 1000),
-            row["Dur"] / 1000,
-            row["BW"] * 1000,
-            linewidth=2,
-            edgecolor="r" if index not in matched_predictions else "g",
+            (row["start_time"], row["low_freq"]),
+            row["end_time"] - row["start_time"],
+            row["high_freq"] - row["low_freq"],
+            linewidth=linewidth,
+            edgecolor="g" if index in matched_predictions else "r",
             facecolor="none",
         )
 
-        ax.add_patch(rect) # type: ignore
+        ax.add_patch(rect)  # type: ignore
 
     return ax
+
+
+def plot_spectrogram_with_plotly(
+    path: str,
+    n_fft: int = 512,
+    hop_length: int = 128,
+    window: str = "hann",
+):
+    # compute the spectrogram
+    wav, samplerate = librosa.load(path, sr=None)  # type: ignore
+
+    duration = len(wav) / samplerate
+
+    spectrogram = librosa.amplitude_to_db(
+        np.abs(
+            librosa.stft(
+                wav,
+                hop_length=hop_length,
+                n_fft=n_fft,
+                window=window,
+            )
+        ),
+        ref=np.max,  # type: ignore
+    )
+
+    num_freq_bins, num_time_bins = spectrogram.shape
+    times = np.linspace(0, duration, num_time_bins)
+    freqs = np.linspace(0, samplerate / 2, num_freq_bins)
+
+    xarray = xa.DataArray(
+        spectrogram,
+        coords=[("freqs", freqs), ("times", times)],
+        dims=["freqs", "times"],
+    )
+
+    fig = px.imshow(xarray)
+    return fig

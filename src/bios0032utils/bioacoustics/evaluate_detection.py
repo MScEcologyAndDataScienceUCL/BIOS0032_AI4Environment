@@ -140,7 +140,7 @@ def bboxes_from_annotations(annotations: pd.DataFrame) -> np.ndarray:
 def match_bboxes(
     true_bboxes: np.ndarray,
     pred_bboxes: np.ndarray,
-    threshold: float = 0.5,
+    iou_threshold: float = 0.5,
 ) -> pd.DataFrame:
     """Match bounding boxes.
 
@@ -150,7 +150,7 @@ def match_bboxes(
     Args:
         true_bbox: Array of bounding boxes.
         pred_bbox: Array of bounding boxes.
-        threshold: Threshold for the intersection over union.
+        iou_threshold: Threshold for the intersection over union.
 
     Returns:
         Dataframe with the following columns:
@@ -160,35 +160,35 @@ def match_bboxes(
     """
     iou = bbox_iou(true_bboxes, pred_bboxes)
     matches = maximal_matching(iou)
-    return matches[matches["affinity"] > threshold]
+    return matches[matches["affinity"] > iou_threshold]
 
 
 def compute_file_precision_recall(
     filename: str,
     detections: pd.DataFrame,
     annotations: pd.DataFrame,
-    threshold: float = 0.5,
+    iou_threshold: float = 0.5,
 ) -> Tuple[float, float]:
     """Compute the precision and recall for a file.
 
     Args:
         filename: Name of the file.
-        detections: Dataframe with Tadarida detections.
+        detections: Dataframe with detections.
         annotations: Dataframe with annotations.
 
     Returns:
         Precision and recall.
     """
     # Select the predictions and annotations from the crowded recording
-    file_detections = detections[detections.Filename == os.path.basename(filename)]
+    file_detections = detections[detections.recording_id == os.path.basename(filename)]
     file_annotations = annotations[
         annotations.recording_id == os.path.basename(filename)
     ]
 
     # Match the bounding boxes by computing the IoU. Discard all matches with IoU less than 0.5
-    pred_boxes = bboxes_from_tadarida_detections(file_detections)
+    pred_boxes = bboxes_from_annotations(file_detections)
     true_boxes = bboxes_from_annotations(file_annotations)
-    matches = match_bboxes(true_boxes, pred_boxes, threshold=threshold)
+    matches = match_bboxes(true_boxes, pred_boxes, iou_threshold=iou_threshold)
 
     # total number of annotated sound events
     positives = len(file_annotations)
@@ -198,11 +198,14 @@ def compute_file_precision_recall(
     # number of matched prediction boxes
     true_positives = len(matches)
 
+    if true_positives == 0:
+        return np.nan, np.nan
+
     # Percentage of predictions that are correct
     precision = true_positives / num_predictions
 
     if positives == 0:
-        return precision, 0
+        return precision, np.nan
 
     # Percentage of sound events that were detected
     recall = true_positives / positives
