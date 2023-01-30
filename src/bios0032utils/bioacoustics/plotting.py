@@ -187,7 +187,6 @@ def plot_spectrogram(
     display.specshow(
         spectrogram,
         sr=samplerate,
-        n_fft=n_fft,
         hop_length=hop_length,
         x_axis="time",
         y_axis="linear",
@@ -240,7 +239,6 @@ def plot_spectrogram_and_detection(
     display.specshow(
         spectrogram,
         sr=samplerate,
-        n_fft=n_fft,
         hop_length=hop_length,
         x_axis="time",
         y_axis="linear",
@@ -328,7 +326,6 @@ def plot_spectrogram_with_predictions_and_annotations(
     display.specshow(
         spectrogram,
         sr=samplerate,
-        n_fft=n_fft,
         hop_length=hop_length,
         x_axis="time",
         y_axis="linear",
