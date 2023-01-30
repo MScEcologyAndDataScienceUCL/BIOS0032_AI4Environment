@@ -383,12 +383,23 @@ def plot_spectrogram_with_predictions_and_annotations(
 
 def plot_spectrogram_with_plotly(
     path: str,
+    start_time: float,
+    end_time: float,
+    low_freq: float,
+    high_freq: float,
+    context: float = 0.1,
     n_fft: int = 512,
     hop_length: int = 128,
     window: str = "hann",
+    eps=0.005,
 ):
+    center = (start_time + end_time) / 2
+    offset = center - context / 2
+
     # compute the spectrogram
-    wav, samplerate = librosa.load(path, sr=None)  # type: ignore
+    wav, samplerate = librosa.load(
+        path, sr=None, offset=offset, duration=context
+    )  # type: ignore
 
     duration = len(wav) / samplerate
 
@@ -413,6 +424,19 @@ def plot_spectrogram_with_plotly(
         coords=[("freqs", freqs), ("times", times)],
         dims=["freqs", "times"],
     )
+    xarray.name = "amplitude"
+    xarray.attrs["units"] = "dB"
 
-    fig = px.imshow(xarray)
+    fig = px.imshow(xarray, origin="lower")
+
+    fig.add_shape(
+        type="rect",
+        x0=start_time - offset - 0.002,
+        x1=end_time - offset + 0.002,
+        y0=low_freq - 8000,
+        y1=high_freq + 8000,
+        xref="x",
+        yref="y",
+        line_color="cyan",
+    )
     return fig
