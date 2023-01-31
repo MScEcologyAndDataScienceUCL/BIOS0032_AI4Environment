@@ -434,6 +434,14 @@ requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 summary = "HTTP library with thread-safe connection pooling, file post, and more."
 
 [[package]]
+name = "wavio"
+version = "0.0.7"
+summary = "A Python module for reading and writing WAV files using numpy arrays."
+dependencies = [
+    "numpy>=1.19.0",
+]
+
+[[package]]
 name = "wcwidth"
 version = "0.2.6"
 summary = "Measures the displayed width of unicode strings in a terminal"
@@ -457,7 +465,7 @@ summary = "Backport of pathlib-compatible object wrapper for zip files"
 
 [metadata]
 lock_version = "4.1"
-content_hash = "sha256:efbabd67607d31a143e5efe8d656ba11fe01a848c1d99b1cfdee281a2d986ed0"
+content_hash = "sha256:d72142ac72694f0a56e25869153113f1ae6fc2c3cf728101fadb3065e45b5440"
 
 [metadata.files]
 "appdirs 1.4.4" = [
@@ -1208,6 +1216,10 @@ content_hash = "sha256:efbabd67607d31a143e5efe8d656ba11fe01a848c1d99b1cfdee281a2
 "urllib3 1.26.14" = [
     {url = "https://files.pythonhosted.org/packages/c5/52/fe421fb7364aa738b3506a2d99e4f3a56e079c0a798e9f4fa5e14c60922f/urllib3-1.26.14.tar.gz", hash = "sha256:076907bf8fd355cde77728471316625a4d2f7e713c125f51953bb5b3eecf4f72"},
     {url = "https://files.pythonhosted.org/packages/fe/ca/466766e20b767ddb9b951202542310cba37ea5f2d792dae7589f1741af58/urllib3-1.26.14-py2.py3-none-any.whl", hash = "sha256:75edcdc2f7d85b137124a6c3c9fc3933cdeaa12ecb9a6a959f22797a0feca7e1"},
+]
+"wavio 0.0.7" = [
+    {url = "https://files.pythonhosted.org/packages/32/94/92ea8799b0770cf5dd8e5424a47fd9f0465ec6e9f3c5837af4fb7ad72ee3/wavio-0.0.7.tar.gz", hash = "sha256:fc4790a12d5fc5fa38b5044a521f56ffcd5277e574154cf35ebe397b695c6912"},
+    {url = "https://files.pythonhosted.org/packages/f2/6c/d26dac9734faf344cd340f385e6e9e2895c5ec6e1c4bb07dc6ca8473f2a4/wavio-0.0.7-py2.py3-none-any.whl", hash = "sha256:fdfe0403b07b29c330ccaa19c4562da038183f9d08eaf5bcfdf1bb7e2ad3ba1b"},
 ]
 "wcwidth 0.2.6" = [
     {url = "https://files.pythonhosted.org/packages/20/f4/c0584a25144ce20bfcf1aecd041768b8c762c1eb0aa77502a3f0baa83f11/wcwidth-0.2.6-py2.py3-none-any.whl", hash = "sha256:795b138f6875577cd91bba52baf9e445cd5118fd32723b460e30a0af30ea230e"},

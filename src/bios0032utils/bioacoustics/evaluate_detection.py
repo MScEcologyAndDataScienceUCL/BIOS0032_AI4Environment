@@ -36,7 +36,6 @@ def interval_intersection(interval1: np.ndarray, interval2: np.ndarray) -> np.nd
     """Compute the intersection of a pair of array of intervals.
 
     Intervals are in the format [start, end].
-
     Args:
         interval1: Array of intervals.
         interval2: Array of intervals.
@@ -211,3 +210,45 @@ def compute_file_precision_recall(
     recall = true_positives / positives
 
     return precision, recall
+
+
+def compute_detection_metrics(
+    filename: str,
+    detections: pd.DataFrame,
+    annotations: pd.DataFrame,
+    iou_threshold: float = 0.5,
+) -> Tuple[float, float, float, float]:
+    """Compute the precision and recall for a file.
+
+    Args:
+        filename: Name of the file.
+        detections: Dataframe with detections.
+        annotations: Dataframe with annotations.
+
+    Returns:
+        positives, true_positives, false_positives, false_negatives
+    """
+    # Select the predictions and annotations from the crowded recording
+    file_detections = detections[detections.recording_id == os.path.basename(filename)]
+    file_annotations = annotations[
+        annotations.recording_id == os.path.basename(filename)
+    ]
+
+    # Match the bounding boxes by computing the IoU. Discard all matches with IoU less than 0.5
+    pred_boxes = bboxes_from_annotations(file_detections)
+    true_boxes = bboxes_from_annotations(file_annotations)
+    matches = match_bboxes(true_boxes, pred_boxes, iou_threshold=iou_threshold)
+
+    # total number of annotated sound events
+    positives = len(file_annotations)
+
+    num_predictions = len(file_detections)
+
+    # number of matched prediction boxes
+    true_positives = len(matches)
+
+    false_positives = num_predictions - true_positives
+
+    false_negatives = positives - true_positives
+
+    return positives, true_positives, false_positives, false_negatives
