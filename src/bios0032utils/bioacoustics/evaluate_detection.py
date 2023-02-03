@@ -197,17 +197,17 @@ def compute_file_precision_recall(
     # number of matched prediction boxes
     true_positives = len(matches)
 
-    if true_positives == 0:
-        return np.nan, np.nan
-
-    # Percentage of predictions that are correct
-    precision = true_positives / num_predictions
+    if num_predictions == 0:
+        precision = np.nan
+    else:
+        # Percentage of predictions that are correct
+        precision = true_positives / num_predictions
 
     if positives == 0:
-        return precision, np.nan
-
-    # Percentage of sound events that were detected
-    recall = true_positives / positives
+        recall = np.nan
+    else:
+        # Percentage of sound events that were detected
+        recall = true_positives / positives
 
     return precision, recall
 
