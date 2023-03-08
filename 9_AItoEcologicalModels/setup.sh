@@ -28,7 +28,7 @@ r_packages="dplyr lme4 rgdal sf terra MetBrewer"
 
 echo "Installing R libraries:"
 for r_package in $r_packages; do
-  echo -n "\t[+] Installing $r_package... "
+  echo -n "    [+] Installing $r_package... "
   Rscript -e "if (!requireNamespace('$r_package', quietly = TRUE)) install.packages('$r_package')" >>r.log 2>&1
   echo "done."
 done
