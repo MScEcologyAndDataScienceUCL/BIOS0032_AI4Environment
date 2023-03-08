@@ -24,12 +24,14 @@ if [ ! -d "data" ]; then
 fi
 echo "done."
 
-echo 'dependencies = c("dplyr", "lme4", "rgdal", "sf", "terra", "MetBrewer")' >>requirements.R
-echo 'dependencies = dependencies[!(dependencies %in% installed.packages()[,"Package"])]' >>requirements.R
-echo 'if(length(dependencies)) install.packages(dependencies)' >>requirements.R
+r_packages="dplyr lme4 rgdal sf terra MetBrewer"
 
-echo -n "Installing R libraries ..."
-Rscript requirements.R >>r.log 2>&1
+echo "Installing R libraries:"
+for r_package in $r_packages; do
+  echo -n "[+] Installing $r_package ..."
+  Rscript -e "if (!requireNamespace('$r_package', quietly = TRUE)) install.packages('$r_package')" >>r.log 2>&1
+  echo "done."
+done
 echo "done."
 
 echo -n "Installing Python dependencies ..."
