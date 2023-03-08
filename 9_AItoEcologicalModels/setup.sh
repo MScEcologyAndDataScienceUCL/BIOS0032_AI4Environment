@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -n "Installing spatial libraries ..."
+echo -n "Installing spatial libraries... "
 (
 	sudo -n add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable &&
 		sudo -n apt-get -qq update &&
@@ -16,7 +16,7 @@ else
 	echo "done."
 fi
 
-echo -n "Downloading data ..."
+echo -n "Downloading data... "
 if [ ! -d "data" ]; then
 	git clone https://github.com/MScEcologyAndDataScienceUCL/BIOS0032_AI4Environment tmp >>data.log 2>&1
 	cp -r tmp/9_AItoEcologicalModels/data/ data/ >>data.log 2>&1
@@ -28,13 +28,13 @@ r_packages="dplyr lme4 rgdal sf terra MetBrewer"
 
 echo "Installing R libraries:"
 for r_package in $r_packages; do
-  echo -n "[+] Installing $r_package ..."
+  echo -n "\t[+] Installing $r_package... "
   Rscript -e "if (!requireNamespace('$r_package', quietly = TRUE)) install.packages('$r_package')" >>r.log 2>&1
   echo "done."
 done
 echo "done."
 
-echo -n "Installing Python dependencies ..."
+echo -n "Installing Python dependencies... "
 pip install rpy2==3.5.1 >>python.log 2>&1
 echo "done."
 
