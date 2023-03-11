@@ -16,3 +16,4 @@ plotly
 ipywidgets
 librosa
 tqdm
+tensorflow
