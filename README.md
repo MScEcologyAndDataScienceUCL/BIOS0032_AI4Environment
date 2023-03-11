@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MScEcologyAndDataScienceUCL/BIOS0032_AI4Environment/binder)
+
 # BIOS0032_AI4Environment
 
 ## Welcome to AI for the Environment Repository
