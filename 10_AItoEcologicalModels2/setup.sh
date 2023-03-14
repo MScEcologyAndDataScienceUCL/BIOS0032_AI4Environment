@@ -8,7 +8,9 @@ echo -n "Installing spatial libraries... "
 			libgdal-dev \
 			libgeos-dev \
 			libproj-dev \
-			libsqlite0-dev
+			libsqlite0-dev \
+			libspatialite-dev \
+			libgeotiff-dev
 ) >>spatial.log 2>&1
 if [ $? != 0 ]; then
 	echo "unable to install spatial dependencies!"
@@ -28,9 +30,9 @@ r_packages="dplyr lme4 sf gratia mgcv"
 
 echo "Installing R libraries:"
 for r_package in $r_packages; do
-  echo -n "    [+] Installing $r_package... "
-  Rscript -e "if (!requireNamespace('$r_package', quietly = TRUE)) install.packages('$r_package')" >>r.log 2>&1
-  echo "done."
+	echo -n "    [+] Installing $r_package... "
+	Rscript -e "if (!requireNamespace('$r_package', quietly = TRUE)) install.packages('$r_package')" >>r.log 2>&1
+	echo "done."
 done
 echo "done."
 
