@@ -20,7 +20,7 @@ to complete.
 Alternatively, you can run the practical on a cloud instance of Rstudio with all
 the required packages pre-installed. To do this, click on the following badge.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MScEcologyAndDataScienceUCL/BIOS0032_AI4Environment/HEAD?urlpath=rstudio)
+<a href="https://mybinder.org/v2/gh/MScEcologyAndDataScienceUCL/binder-env/main?urlpath=rstudio&filepath=BIOS0032_AI4Environment/10_AItoEcologicalModels2/AItoEcolMods_wk10.ipynb" rel="nofollow"><img src="https://camo.githubusercontent.com/581c077bdbc6ca6899c86d0acc6145ae85e9d80e6f805a1071793dbe48917982/68747470733a2f2f6d7962696e6465722e6f72672f62616467655f6c6f676f2e737667" alt="launch binder" data-canonical-src="https://mybinder.org/badge_logo.svg" style="max-width: 100%;"></a>
 
 Here, you will work directly on an Rmarkdown file within Rstudio. However,
 please note that the cloud instance is limited to 2GB of RAM, so avoid
