@@ -1,0 +1,453 @@
+---
+title: "8_AI_and_Movement_data"
+author: "Robin Freeman"
+date: "2023-03-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Machine Learning for tracking data
+
+## What we will learn
+
+In this weeks practical we will explore how machine learning algorithms can be applied to data collected from tracking devices (GPS). We will learn to:
+
+-   Visualise tracking data
+-   Extract and visualise some useful features/metrics from tracking data (speed, tortuosity)
+-   Fit an unsupervised mixture model (kmeans, GMM) to those data
+-   Visualise the resulting classification on the tracking data
+
+If time permits we may also explore:
+
+-   Training a Hidden Markov Model to classify tracking data
+-   Using a neural network to classifying tracking data
+
+```{r, echo=FALSE}
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(mapdata)
+library(moveHMM)
+library(factoextra)
+library(mclust)
+library(geosphere)
+```
+
+## Data
+
+Lets load some data from Browning et al (2018).
+
+Load the tracking data and make a quick plot of all the tracks..
+
+```{r}
+dat <- fread("anon_gps_tracks_with_dive.csv")
+nrow(dat)
+head(dat)
+
+# Quick plot of all tracks, separated by species
+ggplot(dat, aes(
+  x = lon,
+  y = lat,
+  group = species,
+  color = species
+)) +
+  geom_point() + facet_wrap(~ species)
+```
+
+We've got a variety of columns including species (Guillemots [COGU], Shags [EUSH] and Razorbills [RAZO]), bird (the individual), latitude (`lat`), longitude (`lon`), altitude (`alt`), a unix timestamp (`unix`), the colony (`colony2`)
+
+Might be nicer to see these on a map...
+
+```{r}
+ggplot(dat, aes(lon, lat, color = species, group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16) +
+  coord_quickmap()  # Sets aspect ratio
+```
+
+Or faceted by species...
+
+```{r}
+ggplot(dat, aes(lon, lat, color = species, group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16) +
+  coord_quickmap()  +
+  facet_wrap( ~ species)
+
+dat %>%
+  group_by(species, colony2) %>%
+  summarise(nbird = n_distinct(bird))
+```
+
+## Metrics/Features
+
+### Speed
+
+One useful metric for thinking about tracking data is the speed with which an individual is moving. When moving slowly we may think it is behaving differently from when is moving quickly (e.g. resting vs commuting). Let's calculate speed for all individuals.
+
+Calculate speed for every individual...
+
+```{r}
+# Function to calculate speed as dist in m / time
+haversine_speed <-
+  function(lat2, lat1, long2, long1, time2, time1) {
+    dist_in_m = geosphere::distHaversine(cbind(long1, lat2), cbind(long2, lat2), r = 6378137)
+    timediff <- time2 - time1
+    return(dist_in_m / timediff)
+  }
+
+# Apply that function to each individual, arranged by time, along the lagged positions
+dat_with_speed = dat %>%
+  group_by(bird) %>%
+  arrange(bird, unix) %>%
+  mutate(speed_ms = haversine_speed(lat, lag(lat), lon, lag(lon), unix, lag(unix)))
+```
+
+Have a quick look at the speeds..
+
+```{r}
+head(dat_with_speed$speed_ms)
+```
+
+Plot the speed distributions...
+
+```{r}
+ggplot(dat_with_speed, aes(x = speed_ms, group = species, color = species)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.6)
+```
+
+Might be useful to log transform data
+
+```{r}
+ggplot(dat_with_speed, aes(x = speed_ms, group = species, fill = species)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.6) +
+  scale_x_log10()
+```
+
+Or split by species
+
+```{r}
+ggplot(dat_with_speed, aes(x = speed_ms, group = species, fill = species)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.6, probability=TRUE) +
+  scale_x_log10() +
+  facet_wrap( ~ species)
+```
+
+We could try plotting the tracks with speed to color the positions (to see where they are moving fast/slow)...
+
+```{r}
+ggplot(dat_with_speed, aes(lon, lat, color = speed_ms, group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16, alpha = 0.1) +
+  coord_quickmap()  +
+  facet_wrap( ~ species) +
+  scale_color_continuous(name = "speed", trans = "log", type="viridis")
+```
+
+... but it's very hard to discriminate anything at this scale - let's focus on one bird...
+
+```{r}
+one_bird = subset(dat_with_speed, bird == 1)
+
+ggplot(one_bird, aes(lon, lat, color = speed_ms, group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16, alpha = 0.1) +
+  coord_quickmap() +
+  scale_color_continuous(name = "speed", trans = "log", type = "viridis")
+```
+
+Here we can see some faster (lighter) locations and some slower (darker) locations, possibly where the bird is resting?
+
+Let's have a look at it's speed distribution
+
+```{r}
+# Might be useful to log transform data
+ggplot(one_bird, aes(x = speed_ms, group = species, fill = species)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.6) +
+  scale_x_log10()
+```
+
+We could try clustering on speed, perhaps using kmeans?
+
+```{r}
+kmeans_result = stats::kmeans(log10(na.omit(one_bird$speed_ms) + 1), 2, nstart = 25)
+print(summary(kmeans_result))
+print(kmeans_result$center)
+print(table(kmeans_result$cluster))
+```
+
+Need to consider how many clusters there are...
+
+Lets use the `factoextra` package to work out how many clusters are most likely....
+
+```{r}
+# Dropping NAs (here the first speed)
+one_bird$log_speed_ms_s <- scale(log10(one_bird$speed_ms + 1))
+
+fviz_nbclust(na.omit(one_bird$log_speed_ms_s), kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2)
+```
+
+This suggests that (for this bird) 3 clusters might be the best fit, let's rerun kmeans with 3 centres..
+
+```{r}
+kmeans_result = stats::kmeans(log10(na.omit(one_bird$speed_ms) + 1), 3, nstart = 25)
+```
+
+We can then apply these back to the bird data. Note the appended NA needed as the NA speed (first speed) was dropped above)
+
+```{r}
+one_bird$behaviour = c(NA, kmeans_result$cluster)
+```
+
+And plot these behaviours on the birds track
+
+```{r}
+ggplot(one_bird, aes(lon, lat, color = factor(behaviour))) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16) +
+  coord_quickmap()
+```
+
+### Tortuosity
+
+Tortuosity or straightness, can be calculated in a number of ways. Here we're going to use turning angles and step-lengths along our paths.
+
+For this, let's lean on one of the many available R packages for analysing tracks (`moveHMM`)
+
+<https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf>
+
+We can use the package `moveHMM` to calculate step-length and turning-angle
+
+```{r}
+data <- prepData(one_bird,
+                 type = "LL",
+                 coordNames = c("lon", "lat"))
+```
+
+Quick plot of the track with step-length and turning-angle calculated by `moveHMM`
+
+```{r}
+plot(data, compact=TRUE, ask=FALSE)
+```
+
+### Trajectory straightness index, E-max
+
+(from <https://github.com/JimMcL/trajr/blob/master/R/straightness.R>)
+
+Emax, the maximum expected displacement, is a single-valued measure of straightness defined by (Cheung, Zhang, Stricker, & Srinivasan, 2007). Emax-a is a dimensionless, scale-independent measure of the maximum possible expected displacement. Emax-b is `Emax-a * mean_step_length`, and gives the maximum possible expected displacement in spatial units. Values closer to 0 are *more* sinuous, while larger values (approaching infinity) are straighter.
+
+Calculate the straightness index (e-max) by calculating the mean `cos(turning_angle)` and the mean step-length within a window (here 20 samples).
+
+```{r}
+data <- data %>%
+  mutate(
+    mean_angle = frollmean(
+      cos(angle),
+      n = 20,
+      fill = NA,
+      align = "left"
+    ),
+    mean_step = frollmean(
+      step,
+      n = 20,
+      fill = NA,
+      align = "left"
+    ),
+    emaxb = mean_step * mean_angle / (1 - mean_angle)
+  )
+
+plot(log10(data$step), log10(data$emaxb))
+```
+
+We could now apply kmeans to this metric, but let's apply it to speed and straightness together.
+
+```{r}
+fviz_nbclust(na.omit(cbind(log10(data$speed_ms), log10(data$emaxb))), kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2)
+```
+
+```{r}
+kmeans_result = stats::kmeans(na.omit(cbind(data$speed_ms, data$emaxb)), 3, nstart = 25)
+data$behaviour = -1
+data$behaviour[complete.cases(data)] = kmeans_result$cluster
+ggplot(data, aes(x, y, color = factor(behaviour), group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16) +
+  coord_quickmap()
+
+kmeans_result$centers
+```
+
+### Other metrics?
+
+Can you think/calculate other metrics to include in the models?
+
+## Gaussian mixture models
+
+The same process can be done with a Gaussian mixture model (GMM) using the `mclust` package
+
+First we can fit a range of models to the data and see how they compare
+
+```{r}
+BIC <- mclustBIC(cbind(data$log_speed_ms_s, data$log_emaxb_s))
+plot(BIC)
+```
+
+Then use the results of this to select a model...
+
+```{r}
+mod1 <- Mclust(cbind(data$log_speed_ms_s, data$log_emaxb_s), x = BIC)
+summary(mod1, parameters = TRUE)
+```
+
+And we can plot the classifications and uncertainty from this model..
+
+```{r}
+plot(mod1, what="classification")
+plot(mod1, what="uncertainty")
+```
+
+We can extract the model classifications and apply them to the trajectory...
+
+```{r}
+data$gmm_behaviour = mod1$classification
+```
+
+And plot the resulting classifications...
+
+```{r}
+ggplot(data, aes(x, y, color = factor(behaviour), group = species)) +
+  annotation_map(map_data("world")) + # Add the map as a base layer before the points
+  geom_point(pch = 16) +
+  coord_quickmap()
+```
+
+Importantly, the GMM is a probabilistic model, we can obtain the probabilities of each sample coming from each class:
+
+```{r}
+head(mod1$z)
+```
+
+## Hidden Markov Models
+
+We can also fit Hidden-markov models which better capture the temporal dynamics of a time-series. These models (or similar 'state-space models') are now frequently used to model animal movement data. Either to capture behavioural-states (as here) or to estimate errors associated with movement states.
+
+These models simultaneously fit distributions for the metrics we care about (step-length, turning-angle) while also assuming that these distributions differ with the animals behaviour. We can specify how many of these 'states' we think there should be and fit a model.
+
+The model will estimate both parameters for the mean/sd of each state, but also the transition probabilities between them (the probability of being in state X/Y at the next iteration, when you are in state X or Y now)
+
+```{r}
+###
+# Hidden Markov Models
+###
+
+# Priors
+
+# Starting values for the step length parameters
+stepMean0 <- c(0.1, 1.0, 1.0)  # initial means (one for each state)
+stepSD0 <-
+  c(0.1, 0.7, 1.0)  # initial standard deviations (one for each state) stepPar0 <- c(stepMean0, stepSD0)
+stepPar0 <-
+  c(stepMean0, stepSD0)  ### starting values for step angle distribution parameters
+
+zeromass0 <- c(0.1, 0.05)  # step zero-mass
+angleMean0 <- c(pi, 0, pi)  # turning angle mean of each state
+kappa0 <- c(0.01, 8, 0.5)  # angle concentration
+anglePar0 <-
+  c(angleMean0, kappa0)  # starting values for the parameters of the turning angle distributions
+
+## call to fitting function
+# ***
+# ** One-state model, e.g. a NULL model with no transitions (should be roughtly equivalent to a GMM)
+# ***
+m_1 <- fitHMM(
+  data = na.omit(data),
+  nbStates = 1,
+  stepPar0 = stepPar0[c(1, 4)],
+  anglePar0 = anglePar0[c(1, 4)],
+  formula =  ~ 1,
+)
+
+### get info from model
+m_1
+```
+
+Fit a two-state model using two parameters from the `stepLength` and angle priors
+
+```{r}
+# Note the plotting doesn't work (as 1-state model i think!)
+#plot(m_1, plotCI=TRUE, ask = F)
+
+###
+# 2-state model
+###
+
+## call to fitting function
+m_2 <- fitHMM(
+  data = na.omit(data),
+  nbStates = 2,
+  stepPar0 = stepPar0[c(1:2, 4:5)],
+  anglePar0 = anglePar0[c(1:2, 4:5)],
+  formula = ~ 1
+)
+
+### get info from model
+m_2
+plot(m_2, plotCI = TRUE, ask = F)
+```
+
+Fit a three-state model using all of the parameters
+
+```{r}
+###
+# 3-state model
+###
+
+## call to fitting function
+m_3 <- fitHMM(
+  data = na.omit(data),
+  nbStates = 3,
+  stepPar0 = stepPar0,
+  anglePar0 = anglePar0,
+  formula =  ~ 1
+)
+
+### get info from model
+m_3
+plot(m_3, plotCI = TRUE, ask = F)
+```
+
+And compare the AIC of each model (lower is better)
+
+```{r}
+# Compare AICs - here a 2-state model is favoured
+AIC(m_1, m_2, m_3)
+```
+
+### How could we use these probabilities?
+
+## Some further things to try
+
+### Other birds
+
+-   Can you apply a classification to all of the individuals from one colony/species?
+    -   How do the number of states differ between individuals (does this change if run the models across all of them individually/together?)
+
+### HMMs on haggis
+
+There's a walk through of how to apply an HMM to 'Haggis' tracks here: <https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-example.pdf>
+
+### Acceleration data
+
+-   You could try applying these to the acceleration data we collected on Wed, that data is here: <https://www.dropbox.com/s/8p1v0xzvuy1q0qf/all_csv_data_msc_datascience_2023.csv.zip?dl=0> (45Mb compressed, 700Mb uncompressed)
+
+### Deep learning
+
+-   In Browning et al (2018), we were able to predict dives using just the lat/lon data - can you predict dives using these data?
+    -   To construct matrices for predictions, we used an embedding matrix (a matrix where each row is from a different time point across a rolling window). In `r`, you can construct these using `embed`
+
+    -   Can you predict `species` using the movement data?
