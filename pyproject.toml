@@ -1,11 +1,11 @@
 [project]
 name = "bios0032utils"
-version = "0.0.1"
+version = "0.1.1"
 description = "Utilities for BIOS0032 AI4Environment colab notebooks"
 authors = [
-    {name = "Santiago Martinez", email = "santiago.balvanera.20@ucl.ac.uk"},
-    {name = "Omiros Pantazis", email = "omiros.pantazis.16@ucl.ac.uk"},
-    {name = "Kate Jones", email = "kate.e.jones@ucl.ac.uk"},
+    { name = "Santiago Martinez", email = "santiago.balvanera.20@ucl.ac.uk" },
+    { name = "Omiros Pantazis", email = "omiros.pantazis.16@ucl.ac.uk" },
+    { name = "Kate Jones", email = "kate.e.jones@ucl.ac.uk" },
 ]
 dependencies = [
     "librosa",
@@ -16,11 +16,11 @@ dependencies = [
     "ipywebrtc",
     "xarray",
     "wavio>=0.0.7",
+    "torch>=1.10",
+    "seaborn>=0.13.1",
 ]
 requires-python = ">=3.8"
-license = {text = "MIT"}
-
-[tool.pdm]
+license = { text = "MIT" }
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
@@ -31,7 +31,23 @@ build-backend = "pdm.pep517.api"
 "Bug Tracker" = "https://github.com/MScEcologyAndDataScienceUCL/BIOS0032_AI4Environment/issues"
 
 [tool.pyright]
+venvPath = "."
+venv = ".venv"
 include = ["bios0032utils"]
 
 [tool.rope]
 source_folders = ["bios0032utils"]
+
+[tool.black]
+line-length = 79
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.ruff]
+line-length = 79
+target-version = "py38"
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
