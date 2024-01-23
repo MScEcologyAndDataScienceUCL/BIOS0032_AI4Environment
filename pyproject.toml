@@ -1,6 +1,6 @@
 [project]
 name = "bios0032utils"
-version = "0.0.1"
+version = "0.1.1"
 description = "Utilities for BIOS0032 AI4Environment colab notebooks"
 authors = [
     { name = "Santiago Martinez", email = "santiago.balvanera.20@ucl.ac.uk" },
