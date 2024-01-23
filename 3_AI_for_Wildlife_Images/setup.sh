@@ -46,5 +46,5 @@ pip install humanfriendly jsonpickle bios0032utils==0.1.1 >>install.log 2>&1
 echo " - Done"
 
 echo -n "Downloading the model weights"
-wget -O /content/md_v5a.0.0.pt https://github.com/microsoft/CameraTraps/releases/download/v5.0/md_v5a.0.0.pt
+wget -O /content/md_v5a.0.0.pt https://github.com/microsoft/CameraTraps/releases/download/v5.0/md_v5a.0.0.pt >>download.log 2>&1
 echo " - Done"
