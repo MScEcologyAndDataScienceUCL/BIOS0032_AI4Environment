@@ -42,7 +42,7 @@ pip install \
 	torch==1.10.1+cu113 \
 	torchvision==0.11.2+cu113 \
 	-f https://download.pytorch.org/whl/cu113/torch_stable.html >>install.log 2>&1
-pip install humanfriendly jsonpickle >>install.log 2>&1
+pip install humanfriendly jsonpickle bios0032utils==0.1.1 >>install.log 2>&1
 echo " - Done"
 
 echo -n "Downloading the model weights"
