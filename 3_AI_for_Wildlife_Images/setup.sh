@@ -1,10 +1,24 @@
 #!/bin/env bash
 
 # Cloning required repos
-git clone --depth 1 https://github.com/tensorflow/models
-git clone https://github.com/microsoft/CameraTraps
-git clone https://github.com/microsoft/ai4eutils
-git clone https://github.com/ultralytics/yolov5/
+if [ ! -d "models" ]; then
+	git clone --depth 1 https://github.com/tensorflow/models
+fi
+if [ ! -d "CameraTraps" ]; then
+	git clone https://github.com/microsoft/CameraTraps
+    cd CameraTraps
+    git checkout v5.0
+    cd ..
+fi
+if [ ! -d "ai4eutils" ]; then
+	git clone https://github.com/microsoft/ai4eutils
+fi
+if [ ! -d "yolov5" ]; then
+	git clone https://github.com/ultralytics/yolov5/
+    cd yolov5
+    git checkout c23a441c9df7ca9b1f275e8c8719c949269160d1
+    cd ..
+fi
 
 # Installing the Object Detection API
 cd models/research
@@ -22,5 +36,3 @@ pip install humanfriendly jsonpickle
 
 # Downloading the model weights
 wget -O /content/md_v5a.0.0.pt https://github.com/microsoft/CameraTraps/releases/download/v5.0/md_v5a.0.0.pt
-
-cd yolov5 && git checkout c23a441c9df7ca9b1f275e8c8719c949269160d1
