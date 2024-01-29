@@ -382,6 +382,8 @@ def plot_spectrogram_with_predictions_and_annotations(
 
         ax.add_patch(rect)  # type: ignore
 
+    plt.show()
+
     return ax
 
 
