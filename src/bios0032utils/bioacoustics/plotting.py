@@ -1,4 +1,5 @@
 """Plotting functions for audio data."""
+
 import os
 from time import perf_counter
 
@@ -146,6 +147,7 @@ def plot_waveform_with_spectrogram(
     )
 
     plt.tight_layout()
+    plt.show()
 
     return Audio(data=wav, rate=int(samplerate * speed))
 
@@ -261,6 +263,8 @@ def plot_spectrogram_and_detection(
 
         ax.add_patch(rect)  # type: ignore
 
+    plt.show()
+
     return ax
 
 
@@ -333,8 +337,12 @@ def plot_spectrogram_with_predictions_and_annotations(
         ax=ax,
     )
 
-    annotations = annotations[annotations["recording_id"] == os.path.basename(path)]
-    predictions = predictions[predictions["recording_id"] == os.path.basename(path)]
+    annotations = annotations[
+        annotations["recording_id"] == os.path.basename(path)
+    ]
+    predictions = predictions[
+        predictions["recording_id"] == os.path.basename(path)
+    ]
 
     true_boxes = bboxes_from_annotations(annotations)
     pred_boxes = bboxes_from_annotations(predictions)
@@ -394,8 +402,11 @@ def plot_spectrogram_with_plotly(
 
     # compute the spectrogram
     wav, samplerate = librosa.load(
-        path, sr=None, offset=offset, duration=context
-    )  # type: ignore
+        path,
+        sr=None,  # type: ignore
+        offset=offset,
+        duration=context,
+    )
 
     duration = len(wav) / samplerate
 
