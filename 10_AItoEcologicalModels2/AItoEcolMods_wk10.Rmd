@@ -2,7 +2,7 @@
 title: "AI for the Environment: from AI to Ecological Models"
 subtitle: 'Week 10'
 author: "Rory Gibb & Ella Browning"
-date: "07/03/2023"
+date: "11/03/2024"
 output: pdf_document
 ---
 
@@ -30,7 +30,7 @@ library(rstudioapi)
 library(mgcv)
 library(gratia)
 library(lme4)
-# library(raster); library(terra) # only required for solutions
+# library(terra) # only required for solutions
 ```
 
 ## Defining our research question 
@@ -145,7 +145,7 @@ ggplot(locs) +
 
 ## Exercise 2
 
-* Plot scatterplots of the relationship between our response variable (proportion hare detections, *"prop_det"*) and our covariates of interest, in particular livestock activity, closed habitat, distance to water and conservancy. Do you see any obvious evidence of relationships in the raw plots?
+* Plot scatterplots of the relationship between our response variable (proportion hare detections, *"prop_detected"*) and our covariates of interest, in particular livestock activity, closed habitat, distance to water and conservancy. Do you see any obvious evidence of relationships in the raw plots?
 
 ## Fitting logistic (binomial) regression models to estimate probability of hare occupancy
 
