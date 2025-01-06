@@ -1,9 +1,0 @@
-
-1 = no data
-2 = water
-3 = open
-4 = closed
-5 = semi-closed
-6 = agriculture
-300 = no data
-500 = no data
