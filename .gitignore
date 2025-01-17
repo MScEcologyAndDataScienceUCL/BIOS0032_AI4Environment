@@ -143,3 +143,5 @@ dmypy.json
 Exam
 
 hidden
+
+.DS_Store
